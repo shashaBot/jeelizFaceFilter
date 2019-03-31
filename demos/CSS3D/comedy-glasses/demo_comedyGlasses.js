@@ -131,7 +131,7 @@ function init_scene(spec){
     DIV.style.width=width.toString()+'px';
     DIV.style.height=height.toString()+'px';
     DIV.style.display='none';
-    
+
     var aspectRatio=width / height;
     var w2=width/2, h2=height/2;
     var perspectivePx=Math.round(Math.pow( w2*w2 + h2*h2, 0.5 ) / Math.tan( SETTINGS.cameraFOV * Math.PI / 180 ));
@@ -153,6 +153,77 @@ function init_scene(spec){
         pivotOffset0: new THREE.Vector3(0,-SETTINGS.pivotOffsetYZ[0], -SETTINGS.pivotOffsetYZ[1])
     };
 } //end init_scene()
+
+function detectStateFn(detectState) {
+      if (ISDETECTED && detectState.detected<SETTINGS.detectionThreshold-SETTINGS.detectionHysteresis){
+          //DETECTION LOST
+          detect_callback(false);
+          ISDETECTED=false;
+          DIV.style.display='none';
+      } else if (!ISDETECTED && detectState.detected>SETTINGS.detectionThreshold+SETTINGS.detectionHysteresis){
+          //FACE DETECTED
+          detect_callback(true);
+          ISDETECTED=true;
+          DIV.style.display='block';
+      }
+
+      if (ISDETECTED){
+          //move the cube in order to fit the head
+          var tanFOV=Math.tan(CAMERA.aspect*CAMERA.fov*Math.PI/360); //tan(FOV/2), in radians
+          var W=detectState.s;  //relative width of the detection window (1-> whole width of the detection window)
+          var D=1/(2*W*tanFOV); //distance between the front face of the cube and the camera
+
+          //coords in 2D of the center of the detection window in the viewport :
+          var xv=detectState.x;
+          var yv=detectState.y;
+
+          //coords in 3D of the center of the cube (in the view coordinates system)
+          var z=-D-0.5;   // minus because view coordinate system Z goes backward. -0.5 because z is the coord of the center of the cube (not the front face)
+          var x=xv*D*tanFOV;
+          var y=yv*D*tanFOV/CAMERA.aspect;
+
+          //compute position and rotation in 3D
+          MOVEMENT.euler.set(-detectState.rx-SETTINGS.rotationOffsetX, -detectState.ry, detectState.rz, "XYZ");
+
+          MOVEMENT.position.set(-x, -y+SETTINGS.pivotOffsetYZ[0], z+SETTINGS.pivotOffsetYZ[1]);
+          MOVEMENT.pivotOffset.copy(MOVEMENT.pivotOffset0).sub(MOVEMENT.positionOffset);
+          MOVEMENT.pivotOffset.applyEuler(MOVEMENT.euler);
+          MOVEMENT.position.add(MOVEMENT.pivotOffset);
+          MOVEMENT.position.multiplyVectors(MOVEMENT.position, CAMERA.scale);
+
+          //compute the movement matrix
+          MOVEMENT.matrix.makeRotationFromEuler(MOVEMENT.euler); //warning : reset the position
+          MOVEMENT.matrix.setPosition(MOVEMENT.position);
+          MOVEMENT.matrix.scale(MOVEMENT.scale);
+
+          //apply the matrix to the DIV
+          apply_matrix(MOVEMENT.matrix, DIV);
+
+          //detects mouth opening
+          var mouthOpening=detectState.expressions[0];
+          if (ISMOUTHOPENED && mouthOpening<SETTINGS.mouthOpeningThreshold-SETTINGS.mouthOpeningHysteresis){
+              //user closes mouth
+              removeClass(DIV, 'mouthOpened');
+              addClass(DIV, 'mouthClosed');
+              ISMOUTHOPENED=false;
+          } else if (!ISMOUTHOPENED && mouthOpening>SETTINGS.mouthOpeningThreshold+SETTINGS.mouthOpeningHysteresis){
+              //user opens mouth
+              removeClass(DIV, 'mouthClosed');
+              addClass(DIV, 'mouthOpened');
+              ISMOUTHOPENED=true;
+          }
+      } //end if user detected
+
+      GL.useProgram(VIDEOSCREENSHADERPROGRAM);
+      GL.activeTexture(GL.TEXTURE0);
+      GL.bindTexture(GL.TEXTURE_2D, VIDEOTEXTURE);
+
+      //FILL VIEWPORT
+      GL.drawElements(GL.TRIANGLES, 3, GL.UNSIGNED_SHORT, 0);
+
+  } //end callbackTrack()
+}
+
 
 //launched by body.onload() :
 function main(){
@@ -177,74 +248,6 @@ function main(){
         }, //end callbackReady()
 
         //called at each render iteration (drawing loop)
-        callbackTrack: function(detectState){
-            if (ISDETECTED && detectState.detected<SETTINGS.detectionThreshold-SETTINGS.detectionHysteresis){
-                //DETECTION LOST
-                detect_callback(false);
-                ISDETECTED=false;
-                DIV.style.display='none';
-            } else if (!ISDETECTED && detectState.detected>SETTINGS.detectionThreshold+SETTINGS.detectionHysteresis){
-                //FACE DETECTED
-                detect_callback(true);
-                ISDETECTED=true;
-                DIV.style.display='block';
-            }
-
-            if (ISDETECTED){
-                //move the cube in order to fit the head
-                var tanFOV=Math.tan(CAMERA.aspect*CAMERA.fov*Math.PI/360); //tan(FOV/2), in radians
-                var W=detectState.s;  //relative width of the detection window (1-> whole width of the detection window)
-                var D=1/(2*W*tanFOV); //distance between the front face of the cube and the camera
-                
-                //coords in 2D of the center of the detection window in the viewport :
-                var xv=detectState.x;
-                var yv=detectState.y;
-                
-                //coords in 3D of the center of the cube (in the view coordinates system)
-                var z=-D-0.5;   // minus because view coordinate system Z goes backward. -0.5 because z is the coord of the center of the cube (not the front face)
-                var x=xv*D*tanFOV;
-                var y=yv*D*tanFOV/CAMERA.aspect;
-
-                //compute position and rotation in 3D
-                MOVEMENT.euler.set(-detectState.rx-SETTINGS.rotationOffsetX, -detectState.ry, detectState.rz, "XYZ");
-                
-                MOVEMENT.position.set(-x, -y+SETTINGS.pivotOffsetYZ[0], z+SETTINGS.pivotOffsetYZ[1]);
-                MOVEMENT.pivotOffset.copy(MOVEMENT.pivotOffset0).sub(MOVEMENT.positionOffset);
-                MOVEMENT.pivotOffset.applyEuler(MOVEMENT.euler);
-                MOVEMENT.position.add(MOVEMENT.pivotOffset);
-                MOVEMENT.position.multiplyVectors(MOVEMENT.position, CAMERA.scale);
-
-                //compute the movement matrix
-                MOVEMENT.matrix.makeRotationFromEuler(MOVEMENT.euler); //warning : reset the position
-                MOVEMENT.matrix.setPosition(MOVEMENT.position);
-                MOVEMENT.matrix.scale(MOVEMENT.scale);
-
-                //apply the matrix to the DIV
-                apply_matrix(MOVEMENT.matrix, DIV);
-
-                //detects mouth opening
-                var mouthOpening=detectState.expressions[0];
-                if (ISMOUTHOPENED && mouthOpening<SETTINGS.mouthOpeningThreshold-SETTINGS.mouthOpeningHysteresis){
-                    //user closes mouth
-                    removeClass(DIV, 'mouthOpened');
-                    addClass(DIV, 'mouthClosed');
-                    ISMOUTHOPENED=false;
-                } else if (!ISMOUTHOPENED && mouthOpening>SETTINGS.mouthOpeningThreshold+SETTINGS.mouthOpeningHysteresis){
-                    //user opens mouth
-                    removeClass(DIV, 'mouthClosed');
-                    addClass(DIV, 'mouthOpened');
-                    ISMOUTHOPENED=true;
-                }
-            } //end if user detected
-
-            GL.useProgram(VIDEOSCREENSHADERPROGRAM);
-            GL.activeTexture(GL.TEXTURE0);
-            GL.bindTexture(GL.TEXTURE_2D, VIDEOTEXTURE);
-
-            //FILL VIEWPORT
-            GL.drawElements(GL.TRIANGLES, 3, GL.UNSIGNED_SHORT, 0);
-
-        } //end callbackTrack()
+        callbackTrack: detectStateFn
     }); //end JEEFACEFILTERAPI.init call
 } //end main()
-
