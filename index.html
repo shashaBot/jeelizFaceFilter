@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
 
-    <script type="text/javascript" src="https://raw.githubusercontent.com/shashabot/jeelizFaceFilter/master/dist/jeelizFaceFilter.js"></script>
-    <script type="text/javascript" src="https://raw.githubusercontent.com/shashabot/jeelizFaceFilter/master/demos/aFrame/cube/demo_cube.js"></script>
+    <script type="text/javascript" src="dist/jeelizFaceFilter.js"></script>
+    <script type="text/javascript" src="demos/aFrame/cube/demo_cube.js"></script>
 
     <title>Renderer</title>
   </head>
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       JEEFACEFILTERAPI.init({
           canvasId: 'canvas',
-          NNCpath: 'https://raw.githubusercontent.com/shashabot/jeelizFaceFilter/master/dist/NNC.json', //path to JSON neural network model (NNC.json by default)
+          NNCpath: 'dist/NNC.json', //path to JSON neural network model (NNC.json by default)
           callbackReady: function(errCode, spec){
               if (errCode){
                   console.log('AN ERROR HAPPENS. ERROR CODE =', errCode);
