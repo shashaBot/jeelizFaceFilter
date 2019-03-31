@@ -124,7 +124,6 @@ function init_threeScene(spec){
 } //end init_threeScene()
 
 function detectStateFn(detectState) {
-function(detectState){
             if (!ISLOADED){
                 return;
             }
