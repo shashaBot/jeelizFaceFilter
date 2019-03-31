@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
 
-    <script type="text/javascript" src="//raw.githubusercontent.com/jeeliz/jeelizFaceFilter/master/dist/jeelizFaceFilter.js"></script>
-    <script type="text/javascript" src="//raw.githubusercontent.com/jeeliz/jeelizFaceFilter/master/{{filePath}}"></script>
+    <script type="text/javascript" src="//raw.githubusercontent.com/shashabot/jeelizFaceFilter/master/dist/jeelizFaceFilter.js"></script>
+    <script type="text/javascript" src="//raw.githubusercontent.com/shashabot/jeelizFaceFilter/master/demos/aFrame/cube/demo_cube.js"></script>
 
     <title>Renderer</title>
   </head>
@@ -14,14 +14,14 @@
     <script type="text/javascript">
       JEEFACEFILTERAPI.init({
           canvasId: 'canvas',
-          NNCpath: '{{ NNJson }}', //path to JSON neural network model (NNC.json by default)
+          NNCpath: '//raw.githubusercontent.com/shashabot/jeelizFaceFilter/master/dist/NCC.json', //path to JSON neural network model (NNC.json by default)
           callbackReady: function(errCode, spec){
               if (errCode){
                   console.log('AN ERROR HAPPENS. ERROR CODE =', errCode);
                   return;
               }
               // [init scene with spec...]
-              initScene = {{initSceneFn}}
+              initScene = init_aFrame
               initScene(spec)
               console.log('INFO: JEEFACEFILTERAPI IS READY');
           }, //end callbackReady()
@@ -30,7 +30,7 @@
           callbackTrack: function(detectState){
               //render your scene here
               // [... do something with detectState]
-              doWithDetectedState = {{detectStateFn}}
+              doWithDetectedState = detectStateFn
               doWithDetectedState(detectState)
           } //end callbackTrack()
       });//end init call
