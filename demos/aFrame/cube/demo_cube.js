@@ -123,23 +123,8 @@ function init_threeScene(spec){
     ISLOADED=true;
 } //end init_threeScene()
 
-//launched by body.onload() :
-function main(){
-    JEEFACEFILTERAPI.init({
-        canvasId: 'jeeFaceFilterCanvas',
-        NNCpath: '../../../dist/', //root of NNC.json file
-        callbackReady: function(errCode, spec){
-            if (errCode){
-                console.log('AN ERROR HAPPENS. SORRY BRO :( . ERR =', errCode);
-                return;
-            }
-
-            console.log('INFO : JEEFACEFILTERAPI IS READY');
-            init_aFrame(spec);
-        }, //end callbackReady()
-
-        //called at each render iteration (drawing loop)
-        callbackTrack: function(detectState){
+function detectStateFn(detectState) {
+function(detectState){
             if (!ISLOADED){
                 return;
             }
@@ -180,6 +165,24 @@ function main(){
             //trigger the render of the THREE.JS SCENE
             THREERENDERER.render(THREESCENE, THREECAMERA);
         } //end callbackTrack()
+
+//launched by body.onload() :
+function main(){
+    JEEFACEFILTERAPI.init({
+        canvasId: 'jeeFaceFilterCanvas',
+        NNCpath: '../../../dist/', //root of NNC.json file
+        callbackReady: function(errCode, spec){
+            if (errCode){
+                console.log('AN ERROR HAPPENS. SORRY BRO :( . ERR =', errCode);
+                return;
+            }
+
+            console.log('INFO : JEEFACEFILTERAPI IS READY');
+            init_aFrame(spec);
+        }, //end callbackReady()
+
+        //called at each render iteration (drawing loop)
+        callbackTrack: detectStateFn
     }); //end JEEFACEFILTERAPI.init call
 } //end main()
 
