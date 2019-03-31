@@ -1,0 +1,11 @@
+{
+    “applinks”: {
+        “apps”: [],
+        “details”: [
+            {
+                “appID”: “com.example.apple-samplecode.ARKitBasicsZCF7ZR4CVF”,
+                “paths”: [“*”],
+            }
+        ]
+    }
+}
